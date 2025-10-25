@@ -1,7 +1,7 @@
 #!/bin/bash
 chcp 65001
 
-sqlite3 movies_rating.db < db_init.sql
+"sqlite3 movies_rating.db < db_init.sql"
 
 echo --------------------------------------------------
 echo "1. Найти все пары пользователей, оценивших один и тот же фильм. Устранить дубликаты, проверить отсутствие пар с самим собой. Для каждой пары должны быть указаны имена пользователей и название фильма, который они ценили. В списке оставить первые 100 записей."
@@ -10,7 +10,7 @@ sqlite3 movies_rating.db -box -echo "SELECT DISTINCT u1.name AS 'Пользов�
 
 echo --------------------------------------------------
 echo "2. Найти 10 самых свежих оценок от разных пользователей, вывести названия фильмов, имена пользователей, оценку, дату отзыва в формате ГГГГ-ММ-ДД."
-sqlite3 movies_rating.db -box -echo "SELECT DISTINCT m.title AS movie_title, u.name AS user_name, r.rating, datetime(r.timestamp, 'unixepoch') AS review_date FROM ratings r JOIN movies m ON r.movie_id = m.id JOIN users u ON r.user_id = u.id ORDER BY r.timestamp DESC LIMIT 10;"
+sqlite3 movies_rating.db -box -echo "WITH LatestRatings AS (SELECT r.*, ROW_NUMBER() OVER (PARTITION BY r.user_id ORDER BY r.timestamp DESC) as rn FROM ratings r) SELECT m.title AS 'Название фильма', u.name AS 'Пользователи', lr.rating AS 'Рейтинг', date(datetime(lr.timestamp, 'unixepoch')) AS 'Дата просмотра' FROM LatestRatings lr JOIN movies m ON lr.movie_id = m.id JOIN users u ON lr.user_id = u.id WHERE lr.rn = 1 ORDER BY lr.timestamp DESC LIMIT 10;"
 
 
 echo --------------------------------------------------
