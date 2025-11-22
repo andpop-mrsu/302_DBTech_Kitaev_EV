@@ -25,11 +25,11 @@ INSERT OR IGNORE INTO genres (name) VALUES ('Thriller');
 INSERT OR IGNORE INTO genres (name) VALUES ('Adventure');
 
 INSERT OR IGNORE INTO movie_genres (movie_id, genre_id)
-SELECT m.id, g.id FROM movies m JOIN genres g ON g.name = 'Western'
+SELECT m.id, g.id FROM movies m JOIN genres g ON g.name = 'Action'
 WHERE m.title = 'Армагеддон (1998)';
 
 INSERT OR IGNORE INTO movie_genres (movie_id, genre_id)
-SELECT m.id, g.id FROM movies m JOIN genres g ON g.name = 'Fantasy'
+SELECT m.id, g.id FROM movies m JOIN genres g ON g.name = 'Thriller'
 WHERE m.title = 'Иллюзия обмана (2013)';
 
 INSERT OR IGNORE INTO movie_genres (movie_id, genre_id)
