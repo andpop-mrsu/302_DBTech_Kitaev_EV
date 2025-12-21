@@ -1,98 +1,141 @@
-<?php
-require_once __DIR__ . '/database.php';
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Парикмахерская - Мастера</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Список мастеров</h1>
 
-class Master {
-    private $db;
+        <?php
+        $flash = getFlash();
+        if ($flash): ?>
+            <div class="alert <?= htmlspecialchars($flash["type"]) ?>"><?= html(
+    $flash["message"],
+) ?></div>
+        <?php endif;
+        ?>
 
-    public function __construct() {
-        $this->db = Database::getInstance()->getConnection();
-    }
+        <?php if ($action === "create" || $action === "edit"): ?>
+            <h2><?= $action === "edit"
+                ? "Редактировать мастера"
+                : "Добавить мастера" ?></h2>
+            <form action="index.php?action=<?= $action .
+                (isset($master["id"])
+                    ? "&id=" . $master["id"]
+                    : "") ?>" method="post">
+                <div class="form-group">
+                    <label for="full_name">Имя Фамилия:</label>
+                    <input type="text" id="full_name" name="full_name" value="<?= htmlspecialchars(
+                        $master["full_name"] ?? "",
+                    ) ?>" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Телефон:</label>
+                    <input type="tel" id="phone" name="phone" value="<?= htmlspecialchars(
+                        $master["phone"] ?? "",
+                    ) ?>">
+                </div>
+                <div class="form-group">
+                    <label for="specialization">Специализация:</label>
+                    <select id="specialization" name="specialization" required>
+                        <option value="MALE" <?= ($master["specialization"] ??
+                            "") ===
+                        "MALE"
+                            ? "selected"
+                            : "" ?>>Мужской</option>
+                        <option value="FEMALE" <?= ($master["specialization"] ??
+                            "") ===
+                        "FEMALE"
+                            ? "selected"
+                            : "" ?>>Женский</option>
+                        <option value="UNIVERSAL" <?= ($master[
+                            "specialization"
+                        ] ??
+                            "") ===
+                        "UNIVERSAL"
+                            ? "selected"
+                            : "" ?>>Универсал</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="commission_percent">Комиссия (%):</label>
+                    <input type="number" id="commission_percent" name="commission_percent" value="<?= htmlspecialchars(
+                        ($master["commission_percent"] ?? 0) * 100,
+                    ) ?>" min="0" max="100" step="1" required>
+                </div>
 
-    public function getAll() {
-        $stmt = $this->db->query(
-            "SELECT m.*,
-             CASE m.specialization
-                WHEN 'MALE' THEN 'Мужской мастер'
-                WHEN 'FEMALE' THEN 'Женский мастер'
-                WHEN 'UNIVERSAL' THEN 'Универсальный мастер'
-             END as specialization_text
-             FROM masters m 
-             ORDER BY 
-             SUBSTR(m.full_name, 1, INSTR(m.full_name || ' ', ' ') - 1)"
-        );
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
+                <div class="form-group">
+                    <button type="submit" class="button">Сохранить</button>
+                    <a href="index.php" class="button">Отмена</a>
+                </div>
+            </form>
+        <?php elseif ($action === "delete" && isset($master)): ?>
+            <h2>Удалить мастера</h2>
+            <p>Вы уверены, что хотите удалить мастера "<?= htmlspecialchars(
+                $master["full_name"],
+            ) ?>"?</p>
+            <form action="index.php?action=delete&id=<?= $master[
+                "id"
+            ] ?>" method="post">
+                <div class="form-group">
+                    <button type="submit" name="confirm" value="1" class="button">Удалить</button>
+                    <a href="index.php" class="button">Отмена</a>
+                </div>
+            </form>
+        <?php endif; ?>
 
-    public function getById($id) {
-        $stmt = $this->db->prepare('SELECT * FROM masters WHERE id = ?');
-        $stmt->execute([$id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
+        <?php if (!empty($masters)): ?>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Имя</th>
+                        <th>Телефон</th>
+                        <th>Специализация</th>
+                        <th>Комиссия (%)</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($masters as $master): ?>
+                        <tr>
+                            <td><?= htmlspecialchars(
+                                $master["full_name"],
+                            ) ?></td>
+                            <td><?= htmlspecialchars($master["phone"]) ?></td>
+                            <td><?= htmlspecialchars(
+                                $master["specialization"],
+                            ) ?></td>
+                            <td><?= htmlspecialchars(
+                                $master["commission_percent"] * 100,
+                            ) ?></td>
+                            <td class="actions">
+                                <a href="index.php?action=edit&id=<?= $master[
+                                    "id"
+                                ] ?>">Редактировать</a>
+                                <a href="index.php?action=delete&id=<?= $master[
+                                    "id"
+                                ] ?>">Удалить</a>
+                                <a href="index.php?action=schedule&master_id=<?= $master[
+                                    "id"
+                                ] ?>">График</a>
+                                <a href="index.php?action=services&master_id=<?= $master[
+                                    "id"
+                                ] ?>">Выполненные работы</a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php else: ?>
+            <p>Нет мастеров для отображения.</p>
+        <?php endif; ?>
 
-    public function create($data) {
-        $stmt = $this->db->prepare(
-            'INSERT INTO masters (full_name, phone, specialization, commission_percent, is_active) 
-             VALUES (?, ?, ?, ?, ?)'
-        );
-        return $stmt->execute([
-            $data['full_name'],
-            $data['phone'] ?? '',
-            $data['specialization'],
-            $data['commission_percent'],
-            $data['is_active'] ?? 1
-        ]);
-    }
-
-    public function update($id, $data) {
-        $stmt = $this->db->prepare(
-            'UPDATE masters SET 
-             full_name = ?, phone = ?, specialization = ?, commission_percent = ?, is_active = ?
-             WHERE id = ?'
-        );
-        return $stmt->execute([
-            $data['full_name'],
-            $data['phone'] ?? '',
-            $data['specialization'],
-            $data['commission_percent'],
-            $data['is_active'] ?? 1,
-            $id
-        ]);
-    }
-
-    public function delete($id) {
-        $stmt = $this->db->prepare('DELETE FROM masters WHERE id = ?');
-        return $stmt->execute([$id]);
-    }
-
-    public function getSchedule($masterId) {
-        $stmt = $this->db->prepare(
-            "SELECT s.*,
-             strftime('%w', s.work_date) as day_of_week
-             FROM schedules s
-             WHERE s.master_id = ? 
-             ORDER BY s.work_date DESC"
-        );
-        $stmt->execute([$masterId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function getCompletedServices($masterId) {
-        $stmt = $this->db->prepare(
-            "SELECT 
-                asv.id,
-                s.title as service_name,
-                a.start_datetime as date,
-                asv.fixed_price as actual_price,
-                c.full_name as client_name
-             FROM appointments a
-             JOIN appointment_services asv ON a.id = asv.appointment_id
-             JOIN services s ON asv.service_id = s.id
-             JOIN clients c ON a.client_id = c.id
-             WHERE a.master_id = ? AND a.status = 'COMPLETED'
-             ORDER BY a.start_datetime DESC"
-        );
-        $stmt->execute([$masterId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-}
-?>
+        <div class="add-button-container">
+            <a href="index.php?action=create" class="button">Добавить мастера</a>
+        </div>
+    </div>
+</body>
+</html>
